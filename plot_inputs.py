@@ -9,7 +9,7 @@ setTDRStyle()
 
 tree = ROOT.TChain('Jets04')
 
-tree.Add('data/CHS_jet_out_70PU.root')
+tree.Add('data/CHS_jet_out_140PU_600ps.root')
 # tree.Add('data/Default_jet_out.root')
 
 treeNoPU = ROOT.TChain('Jets04')
@@ -90,30 +90,30 @@ variables = {
         'tex':'time of the fourth leading PF photon'
     },
     'logtime0':{
-        'nbins':40,
+        'nbins':60,
         'xmin':-4.,
-        'xmax':4.,
+        'xmax':8.,
         'xtitle':'log(time leading photon (ns))',
         'tex':'logarithm of the time of the leading PF photon'
     },
     'logtime1':{
-        'nbins':40,
+        'nbins':60,
         'xmin':-4.,
-        'xmax':4.,
+        'xmax':8.,
         'xtitle':'log(time 2nd leading photon (ns))',
         'tex':'logarithm of the time of the second leading PF photon'
     },
     'logtime2':{
-        'nbins':40,
+        'nbins':60,
         'xmin':-4.,
-        'xmax':4.,
+        'xmax':8.,
         'xtitle':'log(time 3rd leading photon (ns))',
         'tex':'logarithm of the time of the third leading PF photon'
     },
     'logtime3':{
-        'nbins':40,
+        'nbins':60,
         'xmin':-4.,
-        'xmax':4.,
+        'xmax':8.,
         'xtitle':'log(time 4th leading photon (ns))',
         'tex':'logarithm of the time of the fourth leading PF photon'
     },
@@ -295,7 +295,7 @@ for selection in selections:
         legend.Draw()
         cv.SetLogy(False)
         cms_lumi(cv, iPeriod=14, iPosX=11)
-        cv.Print('varplotsw70/{var}_{sel}.pdf'.format(sel=selection,var=var))
+        cv.Print('varplots600ps/{var}_{sel}.pdf'.format(sel=selection,var=var))
         if selection == 'barrel':
             texOut += texText.format(var=var, var_desc=vd['tex'])
             if varCounter%4 == 0:

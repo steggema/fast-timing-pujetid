@@ -10,7 +10,7 @@ from ROOT import TStyle
 # Global variables
 #
 
-cmsText     = TString("CMS Phase I Simulation")
+cmsText     = TString("CMS Phase II Simulation")
 cmsTextFont   = 61  # default is helvetic-bold
 
 writeExtraText = False

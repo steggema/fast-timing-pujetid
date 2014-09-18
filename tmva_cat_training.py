@@ -1,24 +1,7 @@
 import numpy
-import os
 import ROOT
-TMVA_tools = ROOT.TMVA.Tools.Instance()
-
-# ROOT.gSystem.Load('libBaconAnaDataFormats')
-
-tree = ROOT.TChain('Jets04')
-
-files = []
-
-# dirName = '/data/steggema/Bacon/'
-
-# files = [dirName+f for f in os.listdir(dirName)]
-
-# for f in files:
-#     print 'Opening file', f
-#     tree.Add(f)
-
-tree.Add('data/CHS_jet_out_20PU.root')
-# tree.Add('data/Default_jet_out.root')
+import array
+import optparse
 
 training_vars = [
     'pt',
@@ -41,15 +24,26 @@ training_vars_only_time = [
     'logtime1',
     'pt1',
     'time2',
+    'logtime2',
     'pt2',
+    'logtime3',
     'avetime',
     'sigmatime'
 ]
 
 training_vars_time = training_vars[:] + training_vars_only_time[:]
 
-def train(name='barrel', selection='(pt>20 && pt<100 && abs(eta) < 1.5)', vars=training_vars):
+def parse_options():
+    usage = '''
+%prog [options]
+'''
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-i', '--input', dest='input_file', help='input file name', default='data/CHS_jet_out_140PU_600ps.root', type='string')
+    parser.add_option('-o', '--out_postfix', dest='out_postfix', help='output file postfix', default='600ps', type='string')
+    opts, args = parser.parse_args()
+    return opts, args
 
+def train(name='barrel', selection='(pt>20 && pt<100 && abs(eta) < 1.5)', vars=training_vars, out_name=''):
 
     signal_selection = selection + '&&(genpt>8)' # good jet
     background_selection = selection + '&&(genpt<8)' # PU jet
@@ -59,7 +53,7 @@ def train(name='barrel', selection='(pt>20 && pt<100 && abs(eta) < 1.5)', vars=t
 
     print 'N events signal', num_pass
     print 'N events background', num_fail
-    outFile = ROOT.TFile('TMVA_classification_'+name+'_20PU.root', 'RECREATE')
+    outFile = ROOT.TFile('TMVA_classification_'+name+'_{out}.root'.format(out=out_name), 'RECREATE')
 
     factory    = ROOT.TMVA.Factory(
         "TMVAClassification", 
@@ -80,8 +74,10 @@ def train(name='barrel', selection='(pt>20 && pt<100 && abs(eta) < 1.5)', vars=t
                                         "nTrain_Signal=0:nTest_Background=0:SplitMode=Random:NormMode=NumEvents:!V" )
 
 
-    factory.BookMethod(ROOT.TMVA.Types.kBDT, "BDTG","!H:!V:NTrees=500::BoostType=Grad:Shrinkage=0.05:GradBaggingFraction=0.9:nCuts=500:MaxDepth=5" ) #UseBaggedBoost:MinNodeSize=0.1
+    # factory.BookMethod(ROOT.TMVA.Types.kBDT, "BDTG","!H:!V:NTrees=500::BoostType=Grad:Shrinkage=0.05:GradBaggingFraction=0.9:nCuts=500:MaxDepth=5" ) #UseBaggedBoost:MinNodeSize=0.1
+    bdt = factory.BookMethod(ROOT.TMVA.Types.kBDT, "BDTG","!H:!V:NTrees=1000:BoostType=Grad:Shrinkage=0.02:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=10000:MaxDepth=7:MinNodeSize=0.01:UseRandomisedTrees=True:NodePurityLimit=1." ) #UseBaggedBoost:MinNodeSize=0.1
 
+    bdt.CheckForUnusedOptions()
 
     # factory.BookMethod(ROOT.TMVA.Types.kBDT, "BDT_ADA", "!H:!V:NTrees=400:BoostType=AdaBoost:SeparationType=GiniIndex:nCuts=50:AdaBoostBeta=0.2:MaxDepth=5:MinNodeSize=0.1")
 
@@ -98,9 +94,8 @@ def train(name='barrel', selection='(pt>20 && pt<100 && abs(eta) < 1.5)', vars=t
 
     outFile.Close()
 
+# The following is example code that's not used at the moment
 def read():
-    import array
-
     reader = ROOT.TMVA.Reader('TMVAClassification_BDTG')
 
     varDict = {}
@@ -154,26 +149,37 @@ def read():
         fout.Close()
 
 
-def gui():
+def gui(fname='TMVA_classification.root'):
     ROOT.gROOT.LoadMacro('$ROOTSYS/tmva/test/TMVAGui.C')
-    ROOT.TMVAGui('TMVA_classification.root')
+    ROOT.TMVAGui(fname)
     raw_input("Press Enter to continue...")
 
 if __name__ == '__main__':
+    opts, args = parse_options()
+
+    input_file = opts.input_file
+    out_postfix = opts.out_postfix
+    
+    TMVA_tools = ROOT.TMVA.Tools.Instance()
+
+    tree = ROOT.TChain('Jets04')
+
+    tree.Add(input_file)
+
     selection_forward = '(pt>20 && pt<100 && abs(eta) > 2.5 && abs(eta) < 3.0)'
     selection_endcap = '(pt>20 && pt<100 && abs(eta) > 1.5 && abs(eta) < 2.5)'
     selection_barrel = '(pt>20 && pt<100 && abs(eta) < 1.5)'
 
-    train('barrel', selection_barrel, training_vars)
-    train('barrel_time', selection_barrel, training_vars_time)
-    train('barrel_only_time', selection_barrel, training_vars_only_time)
-    train('endcap', selection_endcap, training_vars)
-    train('endcap_time', selection_endcap, training_vars_time)
-    train('endcap_only_time', selection_endcap, training_vars_only_time)
-    train('forward', selection_forward, training_vars)
-    train('forward_time', selection_forward, training_vars_time)
-    train('forward_only_time', selection_forward, training_vars_only_time)
-    gui()
-    # trainMultiClass()
-    # read()
+    # train('barrel', selection_barrel, training_vars, out_name=out_postfix)
+    train('barrel_time_pt', selection_barrel, training_vars_time, out_name=out_postfix)
+    # train('barrel_only_time', selection_barrel, training_vars_only_time, out_name=out_postfix)
+    # train('endcap', selection_endcap, training_vars, out_name=out_postfix)
+    # train('endcap_time', selection_endcap, training_vars_time, out_name=out_postfix)
+    # train('endcap_only_time', selection_endcap, training_vars_only_time, out_name=out_postfix)
+    # train('forward', selection_forward, training_vars, out_name=out_postfix)
+    # train('forward_time', selection_forward, training_vars_time, out_name=out_postfix)
+    # train('forward_only_time', selection_forward, training_vars_only_time, out_name=out_postfix)
+
+    # gui('TMVA_classification_barrel_{out}.root'.format(out=out_postfix))
+    
 
