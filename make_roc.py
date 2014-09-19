@@ -102,6 +102,8 @@ for mode in modes:
     cv.SetLogy(False)
     cms_lumi(cv, iPeriod=14, iPosX=11)
     cv.Print('pujetid_{mode}.pdf'.format(mode=mode))
+    cv.Print('pujetid_{mode}.C'.format(mode=mode))
+    cv.Print('pujetid_{mode}.root'.format(mode=mode))
     # cv.Print('reco_vertex.pdf')
     # cv.Print('reco_plus_no_vertex.pdf')
 
